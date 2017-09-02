@@ -9,6 +9,7 @@ class App extends Component {
       hotPosts: null
     };
     this.fetchForHotPosts = this.fetchForHotPosts.bind(this);
+    this.makeThumbnail = this.makeThumbnail.bind(this);
   }
 
   componentWillMount() {
@@ -17,9 +18,31 @@ class App extends Component {
 
   fetchForHotPosts() {
     this.setState({ hotPosts: null });
-    getHotPosts().then(hotPosts => {
-      this.setState({ hotPosts: "topMovies.results" });
+    getHotPosts().then(async res => {
+      let prettyJson = res.data.children.map(async (value) => {
+        async function getAllData() {
+          return await new Promise((resolve, reject) => {
+            fetch(`https://www.reddit.com${value.data.permalink}.json?pjson=?`).then(posts => {
+              posts.json().then((postRes) => {
+                value.data.description = postRes[0].data.children[0].data.selftext //This is the description
+                resolve(value.data);
+              }).catch(() => {
+                resolve(value.data);
+              })
+            });
+          });
+        }
+        return await getAllData()
+      })
+      this.setState({ hotPosts: await Promise.all(prettyJson) });
     });
+  }
+
+  makeThumbnail(data, err) {
+    console.log(data)
+    return <div style={{height: 140}}>
+              <img src={data}/>
+            </div>
   }
 
   render() {
@@ -36,38 +59,49 @@ class App extends Component {
           <div id="page-header" className="row">
             <div className="col-xs-6">
               <h3 className="page-title" id="topUser">
-                Movies Collection
+                Reddit Hot Posts
               </h3>
             </div>
           </div>
           <div className="table-container">
-            <BootstrapTable data={this.state.moviesArr} options={options}>
+            <BootstrapTable
+              data={this.state.hotPosts}
+              options={options}
+              >
               <TableHeaderColumn
-                dataField="original_title"
-                width="320"
-                columnClassName="tdBg"
+                dataField="thumbnail"
+                dataFormat={this.makeThumbnail}
+                width="120"
+              >
+                Thumbnail
+              </TableHeaderColumn>
+              <TableHeaderColumn
+                dataField="title"
+                width="190"
                 dataSort
                 isKey
               >
-                Title
+                Heading
               </TableHeaderColumn>
               <TableHeaderColumn
-                dataField="vote_average"
-                width="190"
-                className="tdBg"
-                columnClassName="tdBg"
+                dataField="description"
+                width="160"
+              >
+                Description
+              </TableHeaderColumn>
+              <TableHeaderColumn
+                dataField="author"
+                width="90"
                 dataSort
               >
-                Rating
+                Author
               </TableHeaderColumn>
               <TableHeaderColumn
-                dataField="createdAt"
-                width="160"
-                className="tdBg"
-                columnClassName="tdBg"
-                dataFormat={this.userDetailsButton}
+                dataField="ups"
+                width="70"
+                dataSort
               >
-                User Details
+                Upvotes
               </TableHeaderColumn>
             </BootstrapTable>
           </div>
