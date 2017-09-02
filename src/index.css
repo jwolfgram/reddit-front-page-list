@@ -20,3 +20,7 @@ body {
     background-repeat: no-repeat;
     background-position: center center;
 }
+
+.react-bs-table table td, .react-bs-table table th {
+  white-space: normal;
+}
