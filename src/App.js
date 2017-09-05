@@ -10,49 +10,69 @@ class App extends Component {
     };
     this.fetchForHotPosts = this.fetchForHotPosts.bind(this);
     this.makeThumbnail = this.makeThumbnail.bind(this);
+    this.showDescription = this.showDescription.bind(this);
+    this.parseHTMLEntities = this.parseHTMLEntities.bind(this);
   }
 
   componentWillMount() {
     this.fetchForHotPosts();
   }
 
+  parseHTMLEntities(str) {
+    let parser = new DOMParser();
+    let dom = parser.parseFromString(
+        '<!doctype html><body>' + str,
+        'text/html');
+        console.log("dom")
+    return dom.body.textContent;
+  }
+
   fetchForHotPosts() {
     this.setState({ hotPosts: null });
     getHotPosts().then(async res => {
-      let prettyJson = res.data.children.map(async (value) => {
-        async function getAllData() {
-          return await new Promise((resolve, reject) => {
+      let prettyJson = res.data.children.map((value) => {
+        function getAllData() {
+          return new Promise((resolve, reject) => {
             fetch(`https://www.reddit.com${value.data.permalink}.json?pjson=?`).then(posts => {
               posts.json().then((postRes) => {
                 value.data.description = postRes[0].data.children[0].data.selftext //This is the description
                 resolve(value.data);
-              }).catch(() => {
+              }).catch((err) => {
+                console.error(err)
                 resolve(value.data);
               })
             });
           });
         }
-        return await getAllData()
+        return getAllData()
       })
       this.setState({ hotPosts: await Promise.all(prettyJson) });
+    }).catch((err) => {
+      console.log(err)
     });
   }
 
   makeThumbnail(data, err) {
-    console.log(data)
     return <div style={{height: 140}}>
               <img src={data}/>
             </div>
   }
 
+  showDescription(row) {
+    console.log(row);
+    return (
+      <div></div>
+    );
+  }
+
   render() {
+    console.log(this.state)
     if (this.state.hotPosts === null) {
       return <div className="loading-state" />;
     }
-    const options = {
-      sizePerPage: 50,
+    let options = {
+      sizePerPage: 5,
       noDataText: "No Data Found",
-      sizePerPageList: [25, 50, 75, 100]
     };
     return (
       <div>
@@ -67,6 +87,7 @@ class App extends Component {
             <BootstrapTable
               data={this.state.hotPosts}
               options={options}
+              keyField='subreddit_id'
               >
               <TableHeaderColumn
                 dataField="thumbnail"
@@ -79,7 +100,6 @@ class App extends Component {
                 dataField="title"
                 width="190"
                 dataSort
-                isKey
               >
                 Heading
               </TableHeaderColumn>

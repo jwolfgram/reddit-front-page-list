@@ -22,5 +22,7 @@ body {
 }
 
 .react-bs-table table td, .react-bs-table table th {
-  white-space: normal;
+  white-space: pre-wrap;
+  word-break: break-all; 
+  text-overflow: unset;
 }
